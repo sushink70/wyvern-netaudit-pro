@@ -30,7 +30,7 @@
             height: 1rem;
             border: 2px solid #f3f3f3;
             border-top: 2px solid #198754;
-            border-radius: 50%;
+            border-radius: 50%;;
             animation: spin 1s linear infinite;
         }
         
@@ -46,6 +46,20 @@
             padding: 15px;
             border-radius: 5px;
             font-size: 14px;
+        }
+
+        .history-table {
+            font-size: 0.9rem;
+        }
+
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -93,6 +107,39 @@
                     <h4>Raw Output</h4>
                     <div class="raw-output"></div>
                 </div>
+
+                <!-- Traceroute History Section -->
+                <div class="mt-4">
+                    <h4>Recent Traceroute History</h4>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover history-table">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Total Hops</th>
+                                    <th>Completion Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody">
+                                {% for trace in recent_traceroutes %}
+                                <tr>
+                                    <td>{{ trace.ip_address }}</td>
+                                    <td>{{ trace.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge {% if trace.is_successful %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ trace.is_successful|yesno:"Success,Failed" }}
+                                        </span>
+                                    </td>
+                                    <td>{{ trace.total_hops|default:"-" }}</td>
+                                    <td>{{ trace.completion_time|floatformat:2 }} s</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -126,6 +173,34 @@
                         </div>
                     </div>
                 `;
+            }
+
+            function formatDateTime(date) {
+                return date.toISOString().replace('T', ' ').substr(0, 19);
+            }
+
+            function addHistoryRow(data) {
+                const newRow = `
+                    <tr class="fade-in">
+                        <td>${data.ip_address}</td>
+                        <td>${formatDateTime(new Date())}</td>
+                        <td>
+                            <span class="badge ${data.success ? 'bg-success' : 'bg-danger'}">
+                                ${data.success ? 'Success' : 'Failed'}
+                            </span>
+                        </td>
+                        <td>${data.total_hops || '-'}</td>
+                        <td>${data.completion_time.toFixed(2)} s</td>
+                    </tr>
+                `;
+                
+                // Add new row at the top of the table
+                $("#history-tbody").prepend(newRow);
+                
+                // Remove the last row if there are more than 10 entries
+                if ($("#history-tbody tr").length > 10) {
+                    $("#history-tbody tr:last").remove();
+                }
             }
 
             form.on("submit", function(e) {
@@ -172,8 +247,23 @@
                             // Show raw output
                             rawOutputSection.find('.raw-output').text(response.raw_output);
                             rawOutputSection.show();
+
+                            // Update history table
+                            addHistoryRow({
+                                ip_address: targetIp,
+                                success: true,
+                                total_hops: response.total_hops,
+                                completion_time: response.completion_time
+                            });
                         } else {
                             result.html(`<div class="alert alert-danger">${response.message}</div>`);
+                            // Update history for failed traceroute
+                            addHistoryRow({
+                                ip_address: targetIp,
+                                success: false,
+                                total_hops: null,
+                                completion_time: 0
+                            });
                         }
                     },
                     error: function() {
