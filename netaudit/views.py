@@ -4,7 +4,9 @@ import re
 import subprocess
 from django.http import JsonResponse
 from django.shortcuts import render
-from .models import PingHistory
+from netaudit.models import PingHistory
+import time
+from netaudit.models import TracerouteHistory, TracerouteHop
 
 def dashboard(request):
     return render(request, 'dashboard.html')
@@ -13,9 +15,9 @@ def dashboard(request):
 def parse_ping_output(output):
     """Parse ping command output to extract detailed statistics."""
     stats = {
-        'min_latency': None,
-        'avg_latency': None,
-        'max_latency': None,
+        'min_latency': 0.0,
+        'avg_latency': 0.0,
+        'max_latency': 0.0,
         'packet_loss': None,
         'packets_transmitted': None,
         'packets_received': None
@@ -85,12 +87,7 @@ def ping_view(request):
     recent_pings = PingHistory.objects.all()[:10]
     return render(request, "ping.html", {'recent_pings': recent_pings})
 
-import re
-import time
-import subprocess
-from django.http import JsonResponse
-from django.shortcuts import render
-from .models import TracerouteHistory, TracerouteHop
+
 
 def parse_traceroute_output(output):
     """Parse traceroute command output to extract hop information."""
