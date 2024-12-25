@@ -1,0 +1,13 @@
+# System-Level Dependencies
+To run this project, ensure the following system-level dependencies are installed:
+
+For Ubuntu/Debian:
+    sudo apt update
+    sudo apt install traceroute
+
+For RHEL/CentOS:
+    sudo yum install traceroute
+
+# Python Dependencies
+Install Python dependencies from the requirements.txt file:
+    pip install -r requirements.txt
