@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traceroute Device</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .traceroute-progress {
+            height: 2px;
+            background-color: #198754;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        
+        .hop-card {
+            margin-bottom: 10px;
+            border-left: 4px solid #198754;
+        }
+        
+        .hop-card.unreachable {
+            border-left-color: #dc3545;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #198754;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .raw-output {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h2 class="text-center mb-0">Traceroute to a Device</h2>
+            </div>
+            <div class="card-body">
+                <form id="traceroute-form">
+                    <div class="row g-3">
+                        <div class="col-md-9">
+                            <label for="target_ip" class="form-label">Enter IP Address or Hostname</label>
+                            <input type="text" id="target_ip" name="target_ip" class="form-control" 
+                                   placeholder="e.g., 8.8.8.8 or google.com" required>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success w-100" id="traceroute-button">
+                                Start Traceroute
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="progress-bar" class="mt-4 d-none">
+                    <div class="progress" style="height: 2px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <p class="text-center text-muted mt-2">
+                        <span class="loading-spinner me-2"></span>
+                        Performing traceroute...
+                    </p>
+                </div>
+
+                <div id="result" class="mt-4"></div>
+
+                <div id="hop-results" class="mt-4" style="display: none;">
+                    <h4>Hop Details</h4>
+                    <div id="hop-list"></div>
+                </div>
+
+                <div id="raw-output-section" class="mt-4" style="display: none;">
+                    <h4>Raw Output</h4>
+                    <div class="raw-output"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const form = $("#traceroute-form");
+            const button = $("#traceroute-button");
+            const progress = $("#progress-bar");
+            const result = $("#result");
+            const hopResults = $("#hop-results");
+            const hopList = $("#hop-list");
+            const rawOutputSection = $("#raw-output-section");
+            
+            function createHopCard(hop) {
+                const isUnreachable = !hop.ip_address && !hop.hostname;
+                const rttValues = [hop.rtt1, hop.rtt2, hop.rtt3]
+                    .filter(rtt => rtt !== null)
+                    .map(rtt => `<span class="badge bg-info me-1">${rtt.toFixed(1)} ms</span>`)
+                    .join('');
+                
+                return `
+                    <div class="card hop-card ${isUnreachable ? 'unreachable' : ''} mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title mb-3">Hop ${hop.hop_number}</h5>
+                                <div>${rttValues}</div>
+                            </div>
+                            ${hop.hostname ? `<p class="card-text mb-1"><strong>Hostname:</strong> ${hop.hostname}</p>` : ''}
+                            <p class="card-text mb-0"><strong>IP:</strong> ${hop.ip_address || '***.***.***.***'}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            form.on("submit", function(e) {
+                e.preventDefault();
+                const targetIp = $("#target_ip").val().trim();
+                
+                if (!targetIp) {
+                    result.html('<div class="alert alert-danger">Please enter an IP address or hostname</div>');
+                    return;
+                }
+
+                // Reset and show loading state
+                button.prop('disabled', true);
+                progress.removeClass('d-none');
+                result.empty();
+                hopResults.hide();
+                rawOutputSection.hide();
+
+                $.ajax({
+                    url: "{% url 'traceroute' %}",
+                    type: "POST",
+                    data: {
+                        target_ip: targetIp,
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Show success message
+                            result.html(`
+                                <div class="alert alert-success">
+                                    <h5 class="alert-heading">Traceroute Complete</h5>
+                                    <p class="mb-0">
+                                        Successfully traced route to ${targetIp} through ${response.total_hops} hops
+                                        in ${response.completion_time.toFixed(2)} seconds
+                                    </p>
+                                </div>
+                            `);
+
+                            // Display hop cards
+                            const hopCards = response.parsed_hops.map(createHopCard).join('');
+                            hopList.html(hopCards);
+                            hopResults.show();
+
+                            // Show raw output
+                            rawOutputSection.find('.raw-output').text(response.raw_output);
+                            rawOutputSection.show();
+                        } else {
+                            result.html(`<div class="alert alert-danger">${response.message}</div>`);
+                        }
+                    },
+                    error: function() {
+                        result.html(`
+                            <div class="alert alert-danger">
+                                An error occurred while performing the traceroute.
+                            </div>
+                        `);
+                    },
+                    complete: function() {
+                        button.prop('disabled', false);
+                        progress.addClass('d-none');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Previous head section remains the same -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Device</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .ping-animation {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #007bff;
+            animation: ping 1s ease-in-out infinite;
+        }
+        
+        @keyframes ping {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .stats-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .history-table {
+            font-size: 0.9rem;
+        }
+
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Previous HTML structure remains the same -->
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white text-center">
+                <h2>Ping Device</h2>
+            </div>
+            <div class="card-body">
+                <form id="ping-form" class="row g-3">
+                    <div class="col-md-9">
+                        <label for="target_ip" class="form-label">Enter IP Address</label>
+                        <input type="text" id="target_ip" name="target_ip" class="form-control" 
+                               placeholder="e.g., 192.168.1.1" required>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100" id="ping-button">Ping</button>
+                    </div>
+                </form>
+                
+                <div id="ping-status" class="text-center mt-4" style="display: none;">
+                    <div class="ping-animation"></div>
+                    <p class="mt-2">Pinging device...</p>
+                </div>
+                
+                <div id="result" class="mt-4">
+                    <!-- Result will be displayed here -->
+                </div>
+                
+                <div id="ping-details" class="stats-card" style="display: none;">
+                    <h4>Ping Statistics</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Packets:</strong> <span id="packets-stats"></span></p>
+                            <p><strong>Packet Loss:</strong> <span id="packet-loss"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Latency (min/avg/max):</strong> <span id="latency-stats"></span></p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h5>Raw Output</h5>
+                        <pre id="raw-output" class="bg-light p-2" style="font-size: 0.8rem;"></pre>
+                    </div>
+                </div>
+                
+                <!-- Ping History Section -->
+                <div class="mt-4">
+                    <h4>Recent Ping History</h4>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover history-table">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Latency (avg)</th>
+                                    <th>Packet Loss</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody">
+                                {% for ping in recent_pings %}
+                                <tr>
+                                    <td>{{ ping.ip_address }}</td>
+                                    <td>{{ ping.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge {% if ping.is_successful %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ ping.is_successful|yesno:"Success,Failed" }}
+                                        </span>
+                                    </td>
+                                    <td>{{ ping.avg_latency|default_if_none:"-" }} ms</td>
+                                    <td>{{ ping.packet_loss|default:"0.0" }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function formatDateTime(date) {
+            return date.toISOString().replace('T', ' ').substr(0, 19);
+        }
+
+        function formatPacketLoss(value) {
+            return (value === null || value === undefined) ? '0.0' : value.toString();
+        }
+
+        function addHistoryRow(data) {
+            const packetLoss = formatPacketLoss(data.details?.packet_loss);
+            const avgLatency = data.details?.avg_latency || '0.0';
+            
+            const newRow = `
+                <tr class="fade-in">
+                    <td>${data.ip_address}</td>
+                    <td>${formatDateTime(new Date())}</td>
+                    <td>
+                        <span class="badge ${data.success ? 'bg-success' : 'bg-danger'}">
+                            ${data.success ? 'Success' : 'Failed'}
+                        </span>
+                    </td>
+                    <td>${avgLatency} ms</td>
+                    <td>${packetLoss}%</td>
+                </tr>
+            `;
+            
+            // Add new row at the top of the table
+            $("#history-tbody").prepend(newRow);
+            
+            // Remove the last row if there are more than 10 entries
+            if ($("#history-tbody tr").length > 10) {
+                $("#history-tbody tr:last").remove();
+            }
+        }
+
+        $(document).ready(function () {
+            $("#ping-form").on("submit", function (event) {
+                event.preventDefault();
+                const targetIp = $("#target_ip").val();
+                
+                // Show ping animation
+                $("#ping-status").show();
+                $("#result").hide();
+                $("#ping-details").hide();
+                $("#ping-button").prop('disabled', true);
+                
+                $.ajax({
+                    url: "{% url 'ping' %}",
+                    type: "POST",
+                    data: {
+                        target_ip: targetIp,
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                    },
+                    success: function (response) {
+                        const resultDiv = $("#result");
+                        if (response.success) {
+                            resultDiv.html(`<div class="alert alert-success">${response.message}</div>`);
+                        } else {
+                            resultDiv.html(`<div class="alert alert-danger">${response.message}</div>`);
+                        }
+                        
+                        // Update ping details if available
+                        if (response.details) {
+                            $("#packets-stats").text(
+                                `${response.details.packets_transmitted} transmitted, ${response.details.packets_received} received`
+                            );
+                            $("#packet-loss").text(`${formatPacketLoss(response.details.packet_loss)}%`);
+                            $("#latency-stats").text(
+                                `${response.details.min_latency}/${response.details.avg_latency}/${response.details.max_latency} ms`
+                            );
+                            $("#raw-output").text(response.raw_output);
+                            
+                            // Show ping details with animation
+                            $("#ping-details")
+                                .hide()
+                                .removeClass('fade-in')
+                                .addClass('fade-in')
+                                .show();
+                        }
+                        
+                        // Update history table dynamically
+                        addHistoryRow({
+                            ip_address: targetIp,
+                            success: response.success,
+                            details: response.details
+                        });
+                    },
+                    error: function () {
+                        $("#result").html(
+                            `<div class="alert alert-danger">An error occurred while trying to ping the device.</div>`
+                        );
+                    },
+                    complete: function() {
+                        $("#ping-status").hide();
+                        $("#result").show();
+                        $("#ping-button").prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

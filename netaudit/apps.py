@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class NetautoappConfig(AppConfig):
+class NetauditConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "netautoapp"
+    name = "netaudit"

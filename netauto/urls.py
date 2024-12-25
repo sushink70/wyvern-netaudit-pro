@@ -17,10 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from django.urls import include
-from netautoapp import views
+from netaudit import views
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
+    path('', views.dashboard, name='dashboard'),
     path('ping/', views.ping_view, name='ping'),
     path('traceroute/', views.traceroute_view, name='traceroute'),
 ]
