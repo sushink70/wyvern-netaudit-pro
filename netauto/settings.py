@@ -31,13 +31,18 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "channels",
+    "daphne",
+
+    "netaudit",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "netaudit",
+    
+    
 ]
 
 MIDDLEWARE = [
@@ -70,8 +75,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "netauto.wsgi.application"
-
+#WSGI_APPLICATION = "netauto.wsgi.application"
+ASGI_APPLICATION = "netauto.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

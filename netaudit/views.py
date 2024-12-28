@@ -7,6 +7,7 @@ from django.shortcuts import render
 from netaudit.models import PingHistory
 import time
 from netaudit.models import TracerouteHistory, TracerouteHop
+import json
 
 def dashboard(request):
     return render(request, 'dashboard.html')
@@ -107,7 +108,7 @@ def parse_traceroute_output(output):
         # Extract hop number
         hop_match = re.match(r'\s*(\d+)', line)
         if hop_match:
-            hop_info['hop_number'] = int(hop_match.group(1))
+            hop_info['hop_number'] = int(hop_match.group(1)) # type: ignore
         else:
             continue
 
@@ -119,17 +120,17 @@ def parse_traceroute_output(output):
             # Fallback: Check for inline IPs
             inline_ip_match = re.search(r'(\d{1,3}(?:\.\d{1,3}){3})', line)
             if inline_ip_match:
-                hop_info['ip_address'] = inline_ip_match.group(1)
+                hop_info['ip_address'] = inline_ip_match.group(1) # type: ignore
         
         # Extract RTT values
         rtt_matches = re.findall(r'(\d+\.\d+) ms', line)
         for idx, rtt in enumerate(rtt_matches[:3]):
-            hop_info[f'rtt{idx+1}'] = float(rtt)
+            hop_info[f'rtt{idx+1}'] = float(rtt) # type: ignore
 
         # Check hostname
         host_match = re.search(r'(?<=\s)([a-zA-Z0-9.-]+)(?=\s+\()', line)
         if host_match:
-            hop_info['hostname'] = host_match.group(1)
+            hop_info['hostname'] = host_match.group(1) # type: ignore
         
         # Detect unreachable hops
         if not ip_matches and not rtt_matches:
@@ -223,3 +224,92 @@ def traceroute_view(request):
     
     recent_traceroutes = TracerouteHistory.objects.select_related().prefetch_related('hops').all()[:10]
     return render(request, "traceroute.html", {'recent_traceroutes': recent_traceroutes})
+
+
+""" from netaudit.models import SQLMapLog
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt  # Ensure this is enabled for POST requests in your setup
+def sqlmap_view(request):
+    if request.method == "POST":
+        target_url = request.POST.get("target_url")
+        selected_options = request.POST.get("selected_options", "")
+
+        if not target_url:
+            return JsonResponse({"success": False, "message": "Please provide a valid URL."})
+
+        try:
+            command = ["sqlmap", "-u", target_url] + selected_options.split()
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Log the result
+            SQLMapLog.objects.create(
+                target_url=target_url,
+                options=selected_options,
+                output=result.stdout if result.returncode == 0 else result.stderr,
+                success=result.returncode == 0
+            )
+
+            return JsonResponse({
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "message": "SQLMap execution completed."
+            })
+        except Exception as e:
+            return JsonResponse({"success": False, "message": f"An error occurred: {e}"})
+    
+    # For GET requests, return a meaningful response (like the rendered template if needed)
+    elif request.method == "GET":
+        return render(request, "sqlmap.html", {}) """
+
+import subprocess
+from channels.layers import get_channel_layer
+import json
+import time
+
+def run_nuclei_scan(ip_address):
+    channel_layer = get_channel_layer()
+
+    # Simulate Nuclei scan process
+    process = subprocess.Popen(
+        ['nuclei', '-t', 'templates/', '-target', ip_address],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            # Send the output to WebSocket clients
+            message = {'message': output.strip()}
+            channel_layer.group_send(
+                'nuclei_scan_updates',  # Room name
+                {
+                    'type': 'send_scan_update',
+                    'message': message['message']
+                }
+            )
+        time.sleep(1)
+
+    process.communicate()
+
+def nuclei_scan_view(request):
+    if request.method == "POST":
+        target_url = request.POST.get("target_url")
+        if not target_url:
+            return JsonResponse({"success": False, "message": "Please provide a valid URL."})
+
+        # Call Nuclei scan function
+        result = run_nuclei_scan(target_url)
+        return JsonResponse(result)
+
+    return render(request, "nuclei_scan.html")  # If GET request, render scan page

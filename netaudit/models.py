@@ -37,3 +37,16 @@ class TracerouteHop(models.Model):
     
     class Meta:
         ordering = ['hop_number']
+
+""" from django.db import models
+
+class SQLMapLog(models.Model):
+    target_url = models.URLField(max_length=500)
+    options = models.TextField()
+    output = models.TextField()
+    success = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"SQLMap Log - {self.target_url} ({'Success' if self.success else 'Failed'})"
+ """

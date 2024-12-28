@@ -19,9 +19,13 @@ from django.contrib import admin
 from django.urls import path
 from netaudit import views
 
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('', views.dashboard, name='dashboard'),
     path('ping/', views.ping_view, name='ping'),
     path('traceroute/', views.traceroute_view, name='traceroute'),
+        path('nuclei-scan/', views.nuclei_scan_view, name='nuclei_scan'),
+    
 ]
+""" path("sqlmap/", views.sqlmap_view, name="sqlmap"), """
