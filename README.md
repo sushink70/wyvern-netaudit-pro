@@ -85,12 +85,12 @@ A simple Django web application that provides a dashboard to perform network tes
 my_django_project/
 ├── venv/                   # Virtual environment (excluded from version control)
 ├── manage.py               # Django management script
-├── netauto/              # Django project configuration
+├── netauto/                # Django project configuration
 │   ├── __init__.py
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
-├── netaudit/               # Django app (replace with your app's name)
+├── netaudit/               # Django app
 │   ├── migrations/
 │   ├── __init__.py
 │   ├── admin.py
