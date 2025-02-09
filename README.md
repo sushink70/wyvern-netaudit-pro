@@ -38,8 +38,8 @@ A simple Django web application that provides a dashboard to perform network tes
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/your-username/your-repo.git
-   cd your-repo
+   git clone https://github.com/sushink70/wyvern-netaudit-pro.git
+   cd wyvern-netaudit-pro
    ```
 
 2. **Create a Virtual Environment**
@@ -85,12 +85,12 @@ A simple Django web application that provides a dashboard to perform network tes
 my_django_project/
 ├── venv/                   # Virtual environment (excluded from version control)
 ├── manage.py               # Django management script
-├── myproject/              # Django project configuration
+├── netauto/              # Django project configuration
 │   ├── __init__.py
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
-├── app_name/               # Django app (replace with your app's name)
+├── netaudit/               # Django app (replace with your app's name)
 │   ├── migrations/
 │   ├── __init__.py
 │   ├── admin.py
