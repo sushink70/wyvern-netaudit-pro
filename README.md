@@ -1,33 +1,32 @@
-```markdown
 # Network Test Dashboard
 
 A simple Django web application that provides a dashboard to perform network tests such as **ping reachability** and **traceroute**. The application features a responsive UI built with Bootstrap and uses AJAX (via Axios) to dynamically display test results without page reloads.
 
 ## Features
 
-- **Ping Reachability Test:** Checks if a target device is reachable using the `ping` command.
-- **Traceroute Test:** Displays the network path to a target device using the `traceroute` command.
-- **Responsive Dashboard:** A clean, user-friendly interface built with Bootstrap.
-- **Dynamic Updates:** Results are updated dynamically using AJAX.
+**Ping Reachability Test:** Checks if a target device is reachable using the `ping` command.
+**Traceroute Test:** Displays the network path to a target device using the `traceroute` command.
+**Responsive Dashboard:** A clean, user-friendly interface built with Bootstrap.
+**Dynamic Updates:** Results are updated dynamically using AJAX.
 
 ## Technologies Used
 
-- **Backend:** Django (Python)
-- **Frontend:** Bootstrap 5, HTML, CSS, JavaScript (Axios)
-- **System Commands:** `ping` and `traceroute` (executed via Python's subprocess module)
+**Backend:** Django (Python)
+**Frontend:** Bootstrap 5, HTML, CSS, JavaScript (Axios)
+**System Commands:** `ping` and `traceroute` (executed via Python's subprocess module)
 
 ## Prerequisites
 
-- **Python 3.x**
-- **pip** (Python package manager)
-- **Git** (for version control)
-- **System Dependency:** The `traceroute` command must be installed.
-  - **Ubuntu/Debian:**
+**Python 3.x**
+**pip** (Python package manager)
+**Git** (for version control)
+**System Dependency:** The `traceroute` command must be installed.
+  **Ubuntu/Debian:**
     ```bash
     sudo apt update
     sudo apt install traceroute
     ```
-  - **RHEL/CentOS:**
+  **RHEL/CentOS:**
     ```bash
     sudo yum install traceroute
     ```
@@ -48,11 +47,11 @@ A simple Django web application that provides a dashboard to perform network tes
    ```
 
 3. **Activate the Virtual Environment**
-   - On Linux/macOS:
+   On Linux/macOS:
      ```bash
      source venv/bin/activate
      ```
-   - On Windows:
+   On Windows:
      ```bash
      venv\Scripts\activate
      ```
@@ -76,8 +75,8 @@ A simple Django web application that provides a dashboard to perform network tes
    Open your browser and navigate to [http://127.0.0.1:8000/](http://127.0.0.1:8000/). You should see the Network Test Dashboard.
 
 3. **Perform Network Tests**
-   - **Ping Test:** Enter a target IP or hostname and click the **Ping** button to check its reachability.
-   - **Traceroute Test:** Enter a target IP or hostname and click the **Traceroute** button to see the network route.
+   **Ping Test:** Enter a target IP or hostname and click the **Ping** button to check its reachability.
+   **Traceroute Test:** Enter a target IP or hostname and click the **Traceroute** button to see the network route.
 
 ## Project Structure
 
@@ -106,8 +105,8 @@ my_django_project/
 
 ## Git and Deployment
 
-- **.gitignore:** Ensure that the `venv/` directory, `db.sqlite3`, and other non-essential files are excluded from Git.
-- **Pushing Changes to GitHub:**
+**.gitignore:** Ensure that the `venv/` directory, `db.sqlite3`, and other non-essential files are excluded from Git.
+**Pushing Changes to GitHub:**
   After making changes, you can commit and push your updates with:
   ```bash
   git add .
